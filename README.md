@@ -1,4 +1,4 @@
-# Desafio DevOps 2025 — Solução (v2 Senior)
+# Desafio DevOps 2025 — Solução
 
 - Duas aplicações (Flask + Express) com `/hello` e `/time`.
 - Cache Redis com TTLs distintos (10s / 60s).
