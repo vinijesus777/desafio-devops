@@ -1,0 +1,29 @@
+groups:
+  - name: desafio-devops-alerts
+    rules:
+      - alert: AppDown
+        expr: up{job=~"app1|app2"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Aplicação {{ $labels.job }} indisponível"
+          description: "O target {{ $labels.instance }} está DOWN há pelo menos 2 minutos."
+
+      - alert: PrometheusTargetMissing
+        expr: absent(up{job=~"app1|app2"})
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Targets ausentes"
+          description: "Não há série 'up' para app1/app2 há 2 minutos (scrape falhando?)."
+
+      - alert: CacheHitLow
+        expr: (sum(rate(app_cache_hits_total[5m])) / (sum(rate(app_cache_hits_total[5m])) + sum(rate(app_cache_misses_total[5m])))) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cache hit ratio < 50%"
+          description: "Hit ratio abaixo de 50% por 10m — verifique TTLs e padrão de acesso."

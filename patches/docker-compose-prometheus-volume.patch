@@ -1,0 +1,6 @@
+# Adicione este volume ao serviço 'prometheus' no docker-compose.yml:
+
+  prometheus:
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
