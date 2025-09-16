@@ -1,0 +1,16 @@
+flowchart LR
+    user[Usuário] -->|HTTP| proxy[NGINX Proxy :8080]
+    subgraph Docker Network
+      proxy --> A1[App1 - Flask :5000]
+      proxy --> A2[App2 - Express :3000]
+      A1 <--> R[(Redis)]
+      A2 <--> R[(Redis)]
+      P[Prometheus :9090] -->|Scrape /metrics| A1
+      P -->|Scrape /metrics| A2
+      G[Grafana :3001] --> P
+    end
+
+classDef svc fill:#2b6cb0,stroke:#1a365d,color:#fff,stroke-width:2px;
+classDef infra fill:#2f855a,stroke:#22543d,color:#fff,stroke-width:2px;
+class A1,A2 svc;
+class R,P,G,proxy infra;

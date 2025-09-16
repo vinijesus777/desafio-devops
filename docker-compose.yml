@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: cache-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  app1:
+    build: ./app1-flask
+    container_name: app1-flask
+    environment:
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - APP_CACHE_TTL=${APP1_CACHE_TTL:-10}
+      - SERVICE_NAME=${SERVICE_NAME_APP1:-app1-flask}
+    expose:
+      - "5000"
+    ports:
+      - "15000:5000"     # <— trocamos
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  app2:
+    build: ./app2-express
+    container_name: app2-express
+    environment:
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - APP_CACHE_TTL=${APP2_CACHE_TTL:-60}
+      - SERVICE_NAME=${SERVICE_NAME_APP2:-app2-express}
+    expose:
+      - "3000"
+    ports:
+      - "13000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.55.0
+    container_name: prometheus
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "19090:9090"     # <— trocamos
+    depends_on:
+      - app1
+      - app2
+
+  grafana:
+    image: grafana/grafana:10.4.6
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "13001:3000"     # <— trocamos
+    depends_on:
+      - prometheus
+
+  proxy:
+    build: ./proxy-nginx
+    container_name: proxy-nginx
+    ports:
+      - "18080:8080"     # <— trocamos
+      # - "18443:8443"   # se ativar TLS no nginx.conf
+    depends_on:
+      - app1
+      - app2
