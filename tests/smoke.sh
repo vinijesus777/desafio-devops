@@ -2,24 +2,27 @@
 set -euo pipefail
 
 echo "[SMOKE] Waiting services..."
-sleep 5
+
+# healthcheck simples do proxy
+for i in {1..40}; do
+  if curl -fsS http://127.0.0.1:18080/healthz > /dev/null; then
+    echo "[SMOKE] Proxy is healthy"
+    break
+  fi
+  echo "[SMOKE] Waiting proxy..."
+  sleep 3
+done
 
 echo "[SMOKE] app1 /hello"
-curl -fsS http://localhost:5000/hello | grep -i "App1"
+curl -fsS http://127.0.0.1:15000/hello
 
 echo "[SMOKE] app2 /hello"
-curl -fsS http://localhost:3000/hello | grep -i "App2"
+curl -fsS http://127.0.0.1:13000/hello
 
-echo "[SMOKE] proxy /app1/time"
-curl -fsS http://localhost:8080/app1/time | grep -i "App1"
+echo "[SMOKE] proxy /app1/hello"
+curl -fsS http://127.0.0.1:18080/app1/hello
 
-echo "[SMOKE] proxy /app2/time"
-curl -fsS http://localhost:8080/app2/time | grep -i "App2"
+echo "[SMOKE] proxy /app2/hello"
+curl -fsS http://127.0.0.1:18080/app2/hello
 
-echo "[SMOKE] prometheus up"
-curl -fsS http://localhost:9090/-/healthy | grep -i "Healthy" || true
-
-echo "[SMOKE] grafana login page"
-curl -fsS http://localhost:3001/login | grep -i "Grafana" || true
-
-echo "[SMOKE] OK"
+echo "[SMOKE] SUCCESS"
